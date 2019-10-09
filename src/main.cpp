@@ -36,10 +36,11 @@ float hum = 1;
 
 void sendToUbidots(int CO2, float RH, float temp);
 void startUpAnimation();
+void displayUpdate();
 
 void setup() {
   display.init();
-  display.start(10);
+  displayTicker.attach_ms(10, displayUpdate);
   startUpTicker.attach_ms(20, startUpAnimation);
   
   WiFi.begin(SSID, PASSWORD);
@@ -115,4 +116,8 @@ void startUpAnimation() {
     display.setPixel(1, i%32, i/32, display.RED);
     i++;
   }
+}
+
+void displayUpdate() {
+  display.showFrame();
 }

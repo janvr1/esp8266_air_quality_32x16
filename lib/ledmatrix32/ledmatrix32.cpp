@@ -25,15 +25,6 @@ void ledMatrix::init(int Ton, int Toff, int outputEnable, int latch,
     _Toff = Toff;
 
     clearFrame();
-
-}
-
-void ledMatrix::start(int t_ms_refresh) {
-    _displayUpdater.attach_ms(t_ms_refresh, this->showFrame);
-}
-
-void ledMatrix::stop() {
-    _displayUpdater.detach();
 }
 
 void ledMatrix::_latchOutput() {

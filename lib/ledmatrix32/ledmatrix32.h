@@ -16,8 +16,6 @@ class ledMatrix{
         void drawGUI2(int co2, int hum, int temp);
         void showFrame(void);
         void drawChar(int x, int y, byte character[5], int color, int width=3);
-        void start(int t_refresh);
-        void stop(void);
         int RED = 0;
         int GREEN = 1;
         int OE;
