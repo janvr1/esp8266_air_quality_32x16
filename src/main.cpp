@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <mhz19b.h>
+#include <jan_mhz19b.h>
 #include <ledmatrix32.h>
 #include <DHTesp.h>
 #include <UbidotsMicroESP8266.h>
@@ -11,6 +11,8 @@
 
 #define DHTTYPE DHTesp::DHT22
 #define DHTPIN D0
+#define T_corr -0.7
+#define RH_corr 0
 
 #define SSID "wifi2"
 #define PASSWORD "vsegrepozraku"
@@ -29,10 +31,11 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, NTPSERVER);
 Ticker displayTicker;
 Ticker startUpTicker;
+TempAndHumidity TH;
 
 int CO2 = 1;
-float temp = 1;
-float hum = 1;
+float temp = 1 - T_corr;
+float hum = 1 - RH_corr;
 
 void sendToUbidots(int CO2, float RH, float temp);
 void startUpAnimation();
@@ -74,19 +77,24 @@ int currentMode = 1;
 
 void loop() {
   now_time = millis();
-
   if (currentMode == 1 && (now_time - last_time1) > 1000) {
     display.drawGUI1(hour(), minute(), second(), day(), month(), year());
     last_time1 = now_time;
-
   }
 
   if (currentMode == 1 && (now_time - last_time5) > 5000) {
     currentMode = 2;
     CO2 = mhz.getCO2();
-    temp = dht.getTemperature();
-    hum = dht.getHumidity();
-    display.drawGUI2(CO2, round(hum-17.5), round(temp-1.2));
+    TH = dht.getTempAndHumidity();
+    if (dht.getStatus() == DHTesp::ERROR_NONE) {
+      temp = TH.temperature;
+      hum = TH.humidity;
+    }
+    else {
+      temp = 1 - T_corr;
+      hum = 1 - RH_corr;
+    }
+    display.drawGUI2(CO2, round(hum+RH_corr), round(temp+T_corr));
 
     if ((now_time - last_time_ubi) > 60000) {
       sendToUbidots(CO2, hum, temp);
