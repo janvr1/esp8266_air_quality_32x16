@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <jan_mhz19b.h>
-#include <ledmatrix32.h>
+#include <esp8266_ledmatrix32.h>
 #include <DHTesp.h>
 #include <UbidotsMicroESP8266.h>
 #include <TimeLib.h>
@@ -8,6 +8,7 @@
 #include <ESP8266WiFi.h>
 #include <NTPClient.h>
 #include <Ticker.h>
+#include <zrak_api.h>
 
 #define DHTTYPE DHTesp::DHT22
 #define DHTPIN D0
@@ -23,7 +24,10 @@
 #define DEVICE_LABEL "esp8266"
 #define TOKEN "BBFF-OhEvgOgc8bkmQaT6Oty2ylBAmYtPiP"
 
+#define DEVICE_ID 6
+
 Ubidots ubidotsClient(TOKEN);
+HardwareSerial co2serial(0);
 MHZ19B mhz;
 DHTesp dht;
 ledMatrix display;
@@ -32,10 +36,11 @@ NTPClient timeClient(ntpUDP, NTPSERVER);
 Ticker displayTicker;
 Ticker startUpTicker;
 TempAndHumidity TH;
+zrak_client zrak("jan", "jan");
 
-int CO2 = 1;
-float temp = 1 - T_corr;
-float hum = 1 - RH_corr;
+int CO2 = 5678;
+float temp = 12;
+float hum = 34;
 
 void sendToUbidots(int CO2, float RH, float temp);
 void startUpAnimation();
@@ -48,13 +53,14 @@ void setup() {
   
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(100);
   }
 
   timeClient.begin();
   timeClient.update();
+  delay(1000);
   dht.setup(DHTPIN, DHTTYPE);
-  mhz.begin();
+  mhz.begin(&co2serial);
 
   unsigned long last_time = millis();
   int i = 0;
@@ -63,7 +69,7 @@ void setup() {
   ubidotsClient.setDataSourceName(DEVICE_NAME);
 
   timeClient.end();
-  setTime(timeClient.getEpochTime()+7200);
+  setTime(timeClient.getEpochTime()+3600);
 
   startUpTicker.detach();
 }
@@ -77,9 +83,10 @@ int currentMode = 1;
 
 void loop() {
   now_time = millis();
-  if (currentMode == 1 && (now_time - last_time1) > 1000) {
+  if (currentMode == 1) {
     display.drawGUI1(hour(), minute(), second(), day(), month(), year());
     last_time1 = now_time;
+    // co2serial.println(analogRead(A0));
   }
 
   if (currentMode == 1 && (now_time - last_time5) > 5000) {
@@ -87,17 +94,21 @@ void loop() {
     CO2 = mhz.getCO2();
     TH = dht.getTempAndHumidity();
     if (dht.getStatus() == DHTesp::ERROR_NONE) {
-      temp = TH.temperature;
-      hum = TH.humidity;
+      temp = TH.temperature + T_corr;
+      hum = TH.humidity + RH_corr;
     }
     else {
-      temp = 1 - T_corr;
-      hum = 1 - RH_corr;
+      temp = 1;
+      hum = 1;
     }
-    display.drawGUI2(CO2, round(hum+RH_corr), round(temp+T_corr));
+    display.drawGUI2(CO2, round(hum), round(temp));
 
     if ((now_time - last_time_ubi) > 60000) {
       sendToUbidots(CO2, hum, temp);
+      zrak.addVariable("CO2", CO2);
+      zrak.addVariable("T", temp);
+      zrak.addVariable("RH", hum);
+      zrak.send(DEVICE_ID);
       last_time_ubi = now_time;
     }
 
@@ -109,6 +120,7 @@ void loop() {
     display.drawGUI1(hour(), minute(), second(), day(), month(), year());
     last_time5 = now_time;
   }
+  delay(1000);
 }
 
 void sendToUbidots(int CO2, float RH, float T) {
