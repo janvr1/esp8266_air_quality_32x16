@@ -24,7 +24,6 @@
 #define DEVICE_ID "esp8266"
 #define WEB_INTERVAL 30 //minute
 
-// Ubidots ubidotsClient(TOKEN);
 HardwareSerial co2serial(0);
 MHZ19B mhz;
 DHTesp dht;
@@ -33,7 +32,6 @@ WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, NTPSERVER);
 Ticker displayTicker;
 Ticker startUpTicker;
-// Ticker testTicker;
 TempAndHumidity TH;
 zrak_client zrak("jan", "janvr1", HOST, HTTPS);
 
@@ -41,13 +39,8 @@ int CO2 = 5678;
 float temp = 12;
 float hum = 34;
 
-// void sendToUbidots(int CO2, float RH, float temp);
 void startUpAnimation();
 void displayUpdate();
-
-// void testAD() {
-//   co2serial.println(analogRead(A0));
-// }
 
 void setup()
 {
@@ -58,7 +51,6 @@ void setup()
   display.init();
   displayTicker.attach_ms(10, displayUpdate);
   startUpTicker.attach_ms(20, startUpAnimation);
-  // testTicker.attach_ms(10, testAD);
   WiFi.enableAP(false);
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED)
@@ -80,8 +72,6 @@ void setup()
 }
 
 unsigned long last_time5 = millis();
-unsigned long last_time1 = millis();
-unsigned long last_time_web = millis();
 unsigned long now_time;
 
 bool measurement_sent = false;
@@ -92,10 +82,11 @@ void loop()
 {
   // co2serial.println(analogRead(A0));
   now_time = millis();
+
   if (currentMode == 1)
   {
     display.drawGUI1(hour(), minute(), second(), day(), month(), year());
-    last_time1 = now_time;
+    delay(1000);
   }
 
   if (currentMode == 1 && (now_time - last_time5) > 5000)
@@ -117,38 +108,26 @@ void loop()
     last_time5 = now_time;
   }
 
-  // if ((now_time - last_time_web) > WEB_INTERVAL * 60000)
+  if (currentMode == 2 && (now_time - last_time5) > 5000)
+  {
+    currentMode = 1;
+    last_time5 = now_time;
+  }
+
   if (!measurement_sent && (minute() == 30 || minute() == 0))
   {
-    // sendToUbidots(CO2, hum, temp);
     zrak.addVariable("CO2", CO2);
     zrak.addVariable("T", temp);
     zrak.addVariable("RH", hum);
     zrak.send(DEVICE_ID);
-    // co2serial.println(zrak.send(DEVICE_ID).response);
-    last_time_web = now_time;
     measurement_sent = true;
   }
 
-  if (measurement_sent && (minute() == 29 || minute() == 59)) {
+  if (measurement_sent && (minute() == 29 || minute() == 59))
+  {
     measurement_sent = false;
   }
-
-  if (currentMode == 2 && (now_time - last_time5) > 5000)
-  {
-    currentMode = 1;
-    display.drawGUI1(hour(), minute(), second(), day(), month(), year());
-    last_time5 = now_time;
-  }
-  delay(1000);
 }
-
-// void sendToUbidots(int CO2, float RH, float T) {
-//   ubidotsClient.add("temperature", round(T*10)/10);
-//   ubidotsClient.add("humidity", (int) round(RH));
-//   ubidotsClient.add("co2", CO2);
-//   ubidotsClient.sendAll(true);
-// }
 
 void startUpAnimation()
 {
