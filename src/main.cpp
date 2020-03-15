@@ -9,13 +9,12 @@
 #include <Ticker.h>
 #include <zrak_api_esp8266.h>
 
+#include "secrets.h"
+
 #define DHTTYPE DHTesp::DHT22
 #define DHTPIN D0
 #define T_corr -0.5
 #define RH_corr -3
-
-#define SSID "wifi2"
-#define PASSWORD "vsegrepozraku"
 
 #define NTPSERVER "pool.ntp.org"
 
@@ -33,7 +32,7 @@ NTPClient timeClient(ntpUDP, NTPSERVER);
 Ticker displayTicker;
 Ticker startUpTicker;
 TempAndHumidity TH;
-zrak_client zrak("jan", "janvr1", HOST, HTTPS);
+zrak_client zrak(USERNAME, PASSWORD, HOST, HTTPS);
 
 int CO2 = 5678;
 float temp = 12;
