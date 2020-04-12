@@ -21,7 +21,7 @@
 #define HOST "api.zrak.janvr.wtf"
 #define HTTPS true
 #define DEVICE_ID "esp8266"
-#define WEB_INTERVAL 30 //minute
+// #define WEB_INTERVAL 30 //minute
 
 HardwareSerial co2serial(0);
 MHZ19B mhz;
@@ -51,7 +51,7 @@ void setup()
   displayTicker.attach_ms(10, displayUpdate);
   startUpTicker.attach_ms(20, startUpAnimation);
   WiFi.enableAP(false);
-  WiFi.begin(SSID, PASSWORD);
+  WiFi.begin(SSID, WIFIPASS);
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(100);
@@ -65,7 +65,7 @@ void setup()
   int i = 0;
 
   timeClient.end();
-  setTime(timeClient.getEpochTime() + 3600);
+  setTime(timeClient.getEpochTime() + 7200);
 
   startUpTicker.detach();
 }
