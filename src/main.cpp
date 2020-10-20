@@ -18,7 +18,7 @@
 
 #define NTPSERVER "pool.ntp.org"
 
-#define HOST "api.zrak.janvr.wtf"
+#define HOST "api.zrak.janvr.me"
 #define HTTPS true
 #define DEVICE_ID "esp8266"
 // #define WEB_INTERVAL 30 //minute
